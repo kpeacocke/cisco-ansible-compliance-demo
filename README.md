@@ -18,6 +18,11 @@ Add these repository secrets before running the workflow:
 
 Use **Actions** → **Test Cisco IOS compliance demo** → **Run workflow**.
 
+The workflow has a **fail_on_noncompliance** input:
+
+- `false` (default): report findings but do not fail the job
+- `true`: fail the job when any control is non-compliant
+
 Workflow file: [.github/workflows/sandbox-test.yml](.github/workflows/sandbox-test.yml)
 
 ## Local linting with pre-commit

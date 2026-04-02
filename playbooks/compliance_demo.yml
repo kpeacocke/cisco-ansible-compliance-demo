@@ -6,6 +6,7 @@
   vars:
     quarantine_vlan: 999
     hostname_regex: '^wwm[vnq](mon|msr)[ms]\d{2}(c93|c94)$'
+    fail_on_noncompliance: true
 
   tasks:
     - name: Gather L2 interface state
@@ -110,9 +111,20 @@
       debug:
         var: compliance_results
 
-    - name: Fail if any control is non-compliant
-      vars:
+    - name: Build failed control list
+      set_fact:
         failed_controls: "{{ compliance_results | rejectattr('compliant', 'equalto', true) | list }}"
+
+    - name: Show non-compliant controls in non-strict mode
+      debug:
+        msg: "{{ failed_controls | to_nice_json }}"
+      when:
+        - not fail_on_noncompliance | bool
+        - failed_controls | length > 0
+
+    - name: Fail if any control is non-compliant
       fail:
         msg: "{{ failed_controls | to_nice_json }}"
-      when: failed_controls | length > 0
+      when:
+        - fail_on_noncompliance | bool
+        - failed_controls | length > 0

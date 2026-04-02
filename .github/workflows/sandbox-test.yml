@@ -2,6 +2,12 @@ name: Test Cisco IOS compliance demo
 
 on:
   workflow_dispatch:
+    inputs:
+      fail_on_noncompliance:
+        description: Fail workflow when controls are non-compliant
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   test:
@@ -36,4 +42,4 @@ jobs:
 
       - name: Run compliance playbook
         run: |
-          ansible-playbook playbooks/compliance_demo.yml
+          ansible-playbook playbooks/compliance_demo.yml -e "fail_on_noncompliance=${{ inputs.fail_on_noncompliance }}"
