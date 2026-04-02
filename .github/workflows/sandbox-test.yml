@@ -121,7 +121,7 @@ jobs:
               else:
                   fh.write("No violations detected.\n")
 
-                if playbook_outcome != 'success':
+              if playbook_outcome != 'success':
                   fh.write("\nThe playbook reported an execution failure after generating the compliance report.\n\n")
                   append_log_excerpt(fh)
           PY
