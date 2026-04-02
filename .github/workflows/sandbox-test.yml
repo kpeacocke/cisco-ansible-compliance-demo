@@ -101,7 +101,9 @@ jobs:
               sys.exit(2)
 
           report = json.loads(report_path.read_text(encoding="utf-8"))
+          results = report.get("results", [])
           failed_controls = report.get("failed_controls", [])
+          passed_controls = [c for c in results if c.get("compliant") is True]
 
           with summary_path.open("a", encoding="utf-8") as fh:
               fh.write("## Workflow Status\n\n")
@@ -120,6 +122,15 @@ jobs:
                   fh.write("\n")
               else:
                   fh.write("No violations detected.\n")
+
+                if passed_controls:
+                  fh.write("### Successful Controls (Proof)\n\n")
+                  for control in passed_controls:
+                    fh.write(f"- `{control['id']}`: {control['description']}\n")
+                    evidence = control.get("evidence", {})
+                    for key, value in evidence.items():
+                      fh.write(f"  - {key}: `{json.dumps(value) if isinstance(value, (list, dict)) else value}`\n")
+                  fh.write("\n")
 
               if playbook_outcome != 'success':
                   fh.write("\nThe playbook reported an execution failure after generating the compliance report.\n\n")
