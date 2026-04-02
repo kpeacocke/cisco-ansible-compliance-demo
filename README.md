@@ -18,6 +18,42 @@ Add these repository secrets before running the workflow:
 
 Use **Actions** → **Test Cisco IOS compliance demo** → **Run workflow**.
 
+Workflow file: [.github/workflows/sandbox-test.yml](.github/workflows/sandbox-test.yml)
+
+## Local linting with pre-commit
+
+One-command setup (recommended):
+
+```bash
+./scripts/bootstrap-dev.sh
+```
+
+Script file: [scripts/bootstrap-dev.sh](scripts/bootstrap-dev.sh)
+
+Setup only (skip running checks):
+
+```bash
+./scripts/bootstrap-dev.sh --no-run
+```
+
+Install tooling:
+
+```bash
+python3 -m pip install --upgrade pre-commit ansible-lint yamllint
+```
+
+Enable hooks for this repo:
+
+```bash
+pre-commit install
+```
+
+Run checks on all files:
+
+```bash
+pre-commit run --all-files
+```
+
 ## Notes
 
 This is intended as a small proof repo. It uses a public GitHub Actions runner and targets a reachable Cisco DevNet Sandbox over SSH.

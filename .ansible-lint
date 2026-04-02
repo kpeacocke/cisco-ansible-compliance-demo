@@ -1,0 +1,14 @@
+---
+profile: basic
+exclude_paths:
+  - .github/
+  - .venv/
+  - venv/
+  - .ansible/
+mock_modules:
+  - cisco.ios.ios_l2_interfaces
+  - cisco.ios.ios_interfaces
+  - cisco.ios.ios_facts
+
+# Keep defaults on; this is intentionally small and predictable for a demo repo.
+use_default_rules: true
