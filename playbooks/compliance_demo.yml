@@ -1,0 +1,118 @@
+---
+- name: Cisco IOS compliance demo
+  hosts: iosxe_sandbox
+  gather_facts: false
+
+  vars:
+    quarantine_vlan: 999
+    hostname_regex: '^wwm[vnq](mon|msr)[ms]\d{2}(c93|c94)$'
+
+  tasks:
+    - name: Gather L2 interface state
+      cisco.ios.ios_l2_interfaces:
+        state: gathered
+      register: l2_state
+
+    - name: Gather interface state
+      cisco.ios.ios_interfaces:
+        state: gathered
+      register: int_state
+
+    - name: Gather hostname facts
+      cisco.ios.ios_facts:
+      register: facts
+
+    - name: Rule 1 - Native VLAN is not VLAN 1 on enabled trunk interfaces
+      vars:
+        disabled_interfaces: >-
+          {{
+            int_state.gathered
+            | selectattr('enabled', 'defined')
+            | selectattr('enabled', 'equalto', false)
+            | map(attribute='name')
+            | list
+          }}
+        offending_interfaces_rule1: >-
+          {{
+            l2_state.gathered
+            | selectattr('mode', 'defined')
+            | selectattr('mode', 'equalto', 'trunk')
+            | selectattr('trunk', 'defined')
+            | selectattr('trunk.native_vlan', 'defined')
+            | selectattr('trunk.native_vlan', 'equalto', 1)
+            | rejectattr('name', 'in', disabled_interfaces)
+            | map(attribute='name')
+            | list
+          }}
+      set_fact:
+        rule1_result:
+          id: "SW-001"
+          description: "Native VLAN is not VLAN 1 on enabled trunk interfaces"
+          compliant: "{{ offending_interfaces_rule1 | length == 0 }}"
+          evidence:
+            offending_interfaces: "{{ offending_interfaces_rule1 }}"
+
+    - name: Rule 2 - Unused access interfaces must be shutdown and assigned to VLAN 999
+      vars:
+        shutdown_interfaces: >-
+          {{
+            int_state.gathered
+            | selectattr('enabled', 'defined')
+            | selectattr('enabled', 'equalto', false)
+            | map(attribute='name')
+            | list
+          }}
+        access_vlan_999_interfaces: >-
+          {{
+            l2_state.gathered
+            | selectattr('mode', 'defined')
+            | selectattr('mode', 'equalto', 'access')
+            | selectattr('access', 'defined')
+            | selectattr('access.vlan', 'defined')
+            | selectattr('access.vlan', 'equalto', quarantine_vlan)
+            | map(attribute='name')
+            | list
+          }}
+        offending_interfaces_rule2: >-
+          {{
+            shutdown_interfaces
+            | reject('in', access_vlan_999_interfaces)
+            | list
+          }}
+      set_fact:
+        rule2_result:
+          id: "SW-002"
+          description: "Shutdown access interfaces must be assigned to VLAN 999"
+          compliant: "{{ offending_interfaces_rule2 | length == 0 }}"
+          evidence:
+            offending_interfaces: "{{ offending_interfaces_rule2 }}"
+
+    - name: Rule 3 - Hostname matches naming convention
+      vars:
+        actual_hostname: "{{ facts.ansible_facts.ansible_net_hostname | default('') }}"
+      set_fact:
+        rule3_result:
+          id: "GEN-001"
+          description: "Hostname matches required naming convention"
+          compliant: "{{ actual_hostname is match(hostname_regex) }}"
+          evidence:
+            actual_hostname: "{{ actual_hostname }}"
+            regex: "{{ hostname_regex }}"
+
+    - name: Aggregate results
+      set_fact:
+        compliance_results:
+          - "{{ rule1_result }}"
+          - "{{ rule2_result }}"
+          - "{{ rule3_result }}"
+
+    - name: Show compliance results
+      debug:
+        var: compliance_results
+
+    - name: Fail if any control is non-compliant
+      vars:
+        failed_controls: "{{ compliance_results | rejectattr('compliant', 'equalto', true) | list }}"
+      fail:
+        msg: "{{ failed_controls | to_nice_json }}"
+      when: failed_controls | length > 0
