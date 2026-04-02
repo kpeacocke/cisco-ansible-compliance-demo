@@ -2,12 +2,6 @@ name: Test Cisco IOS compliance demo
 
 on:
   workflow_dispatch:
-    inputs:
-      fail_on_noncompliance:
-        description: Fail workflow when controls are non-compliant
-        required: false
-        default: false
-        type: boolean
 
 jobs:
   test:
@@ -42,5 +36,100 @@ jobs:
           test -n "$SANDBOX_PASSWORD"
 
       - name: Run compliance playbook
+        id: compliance_run
+        continue-on-error: true
         run: |
-          ansible-playbook playbooks/compliance_demo.yml -e "fail_on_noncompliance=${{ inputs.fail_on_noncompliance }}"
+          set -o pipefail
+          ansible-playbook playbooks/compliance_demo.yml -e "fail_on_noncompliance=false" 2>&1 | tee ansible-playbook.log
+
+      - name: Upload compliance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-report
+          path: compliance-report.json
+          if-no-files-found: warn
+
+      - name: Upload ansible execution log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ansible-playbook-log
+          path: ansible-playbook.log
+          if-no-files-found: warn
+
+      - name: Summarize compliance results
+        if: always()
+        env:
+          PLAYBOOK_OUTCOME: ${{ steps.compliance_run.outcome }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          report_path = Path("compliance-report.json")
+          log_path = Path("ansible-playbook.log")
+          summary_path = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          playbook_outcome = os.environ.get("PLAYBOOK_OUTCOME", "unknown")
+
+          def append_log_excerpt(handle):
+              if not log_path.exists():
+                  handle.write("No playbook log was captured.\n")
+                  return
+
+              lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+              excerpt = lines[-40:] if len(lines) > 40 else lines
+              handle.write("### Execution Log Excerpt\n\n")
+              handle.write("```text\n")
+              handle.write("\n".join(excerpt))
+              handle.write("\n```\n")
+
+          if not report_path.exists():
+              with summary_path.open("a", encoding="utf-8") as fh:
+                fh.write("## Workflow Status\n\n")
+                fh.write("Execution: FAIL\n\n")
+                fh.write("## Compliance Results\n\n")
+                fh.write("Compliance state: UNKNOWN\n\n")
+                fh.write("No compliance report was produced. The playbook likely failed before evaluation completed.\n")
+                  fh.write(f"Playbook step outcome: `{playbook_outcome}`\n\n")
+                  append_log_excerpt(fh)
+              sys.exit(2)
+
+          report = json.loads(report_path.read_text(encoding="utf-8"))
+          failed_controls = report.get("failed_controls", [])
+
+          with summary_path.open("a", encoding="utf-8") as fh:
+              fh.write("## Workflow Status\n\n")
+              fh.write(f"Execution: {'PASS' if playbook_outcome == 'success' else 'FAIL'}\n\n")
+              fh.write("## Compliance Results\n\n")
+              fh.write(f"Target: `{report.get('target', 'unknown')}`\n\n")
+              fh.write(f"Compliance state: {'PASS' if report.get('compliant') else 'FAIL'}\n\n")
+
+              if failed_controls:
+                  fh.write("### Violations\n\n")
+                  for control in failed_controls:
+                      fh.write(f"- `{control['id']}`: {control['description']}\n")
+                      evidence = control.get("evidence", {})
+                      for key, value in evidence.items():
+                          fh.write(f"  - {key}: `{json.dumps(value) if isinstance(value, (list, dict)) else value}`\n")
+                  fh.write("\n")
+              else:
+                  fh.write("No violations detected.\n")
+
+                if playbook_outcome != 'success':
+                  fh.write("\nThe playbook reported an execution failure after generating the compliance report.\n\n")
+                  append_log_excerpt(fh)
+          PY
+
+      - name: Fail workflow only on execution errors
+        if: always()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          report_path = Path("compliance-report.json")
+          if not report_path.exists():
+              raise SystemExit("Compliance report missing; failing workflow.")
+          PY

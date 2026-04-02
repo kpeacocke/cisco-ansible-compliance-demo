@@ -6,6 +6,7 @@
   vars:
     quarantine_vlan: 999
     hostname_regex: '^wwm[vnq](mon|msr)[ms]\d{2}(c93|c94)$'
+    compliance_report_path: "./compliance-report.json"
     fail_on_noncompliance: true
 
   tasks:
@@ -128,6 +129,20 @@
     - name: Build failed control list
       set_fact:
         failed_controls: "{{ compliance_results | rejectattr('compliant', 'equalto', true) | list }}"
+
+    - name: Write compliance report to controller
+      delegate_to: localhost
+      copy:
+        dest: "{{ compliance_report_path }}"
+        content: |
+          {{
+            {
+              'target': inventory_hostname,
+              'compliant': (failed_controls | length == 0),
+              'results': compliance_results,
+              'failed_controls': failed_controls
+            } | to_nice_json
+          }}
 
     - name: Show non-compliant controls in non-strict mode
       debug:

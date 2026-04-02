@@ -18,10 +18,14 @@ Add these repository secrets before running the workflow:
 
 Use **Actions** → **Test Cisco IOS compliance demo** → **Run workflow**.
 
-The workflow has a **fail_on_noncompliance** input:
+The workflow always evaluates the current device state and reports two separate outcomes:
 
-- `false` (default): report findings but do not fail the job
-- `true`: fail the job when any control is non-compliant
+- Workflow `PASS`: the playbook ran successfully
+- Workflow `FAIL`: the playbook did not run correctly or no report was produced
+- Compliance `PASS`: no violations were found
+- Compliance `FAIL`: one or more violations were found
+
+Each run also uploads `compliance-report.json` and `ansible-playbook.log` as artifacts and writes a human-readable summary to the GitHub Actions job summary, including an execution log excerpt when the playbook fails.
 
 Workflow file: [.github/workflows/sandbox-test.yml](.github/workflows/sandbox-test.yml)
 
