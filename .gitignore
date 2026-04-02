@@ -1,0 +1,39 @@
+# OS / filesystem
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Python environment and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Ansible runtime artifacts
+*.retry
+ansible.log
+.ansible/
+
+# Molecule / test artifacts (if used)
+.molecule/
+
+# Build/output artifacts
+dist/
+build/
+
+# Local secrets and overrides (uncomment if you store local-only files)
+# *.vault
+# vault_pass.txt
+# group_vars/all/vault.yml
+# host_vars/*/vault.yml

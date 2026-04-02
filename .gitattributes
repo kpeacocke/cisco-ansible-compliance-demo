@@ -1,0 +1,26 @@
+# Normalize text files
+* text=auto eol=lf
+
+# Infrastructure as code and shell scripts should stay LF
+*.yml text eol=lf
+*.yaml text eol=lf
+*.j2 text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.sh text eol=lf
+
+# Windows scripts
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Mark common binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.tgz binary
