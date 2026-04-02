@@ -1,3 +1,8 @@
 {
-    "snyk.advanced.autoSelectOrganization": true
+    "snyk.advanced.autoSelectOrganization": true,
+    "markdownlint.ignore": [
+        ".ansible-lint",
+        ".yamllint",
+        ".pre-commit-config.yaml"
+    ]
 }
