@@ -47,7 +47,7 @@ jobs:
 
       - name: Upload compliance report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: compliance-report
           path: compliance-report.json
@@ -55,7 +55,7 @@ jobs:
 
       - name: Upload ansible execution log
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ansible-playbook-log
           path: ansible-playbook.log
@@ -123,13 +123,13 @@ jobs:
               else:
                   fh.write("No violations detected.\n")
 
-                if passed_controls:
+              if passed_controls:
                   fh.write("### Successful Controls (Proof)\n\n")
                   for control in passed_controls:
-                    fh.write(f"- `{control['id']}`: {control['description']}\n")
-                    evidence = control.get("evidence", {})
-                    for key, value in evidence.items():
-                      fh.write(f"  - {key}: `{json.dumps(value) if isinstance(value, (list, dict)) else value}`\n")
+                      fh.write(f"- `{control['id']}`: {control['description']}\n")
+                      evidence = control.get("evidence", {})
+                      for key, value in evidence.items():
+                          fh.write(f"  - {key}: `{json.dumps(value) if isinstance(value, (list, dict)) else value}`\n")
                   fh.write("\n")
 
               if playbook_outcome != 'success':
