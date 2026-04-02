@@ -66,3 +66,7 @@ pre-commit run --all-files
 ## Notes
 
 This is intended as a small proof repo. It uses a public GitHub Actions runner and targets a reachable Cisco DevNet Sandbox over SSH.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).
