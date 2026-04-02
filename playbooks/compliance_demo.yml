@@ -63,6 +63,20 @@
             | map(attribute='name')
             | list
           }}
+        access_interfaces: >-
+          {{
+            l2_state.gathered
+            | selectattr('mode', 'defined')
+            | selectattr('mode', 'equalto', 'access')
+            | map(attribute='name')
+            | list
+          }}
+        shutdown_access_interfaces: >-
+          {{
+            shutdown_interfaces
+            | select('in', access_interfaces)
+            | list
+          }}
         access_vlan_999_interfaces: >-
           {{
             l2_state.gathered
@@ -76,7 +90,7 @@
           }}
         offending_interfaces_rule2: >-
           {{
-            shutdown_interfaces
+            shutdown_access_interfaces
             | reject('in', access_vlan_999_interfaces)
             | list
           }}
