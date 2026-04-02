@@ -40,7 +40,10 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          ansible-playbook playbooks/compliance_demo.yml -e "fail_on_noncompliance=false" 2>&1 | tee ansible-playbook.log
+          ansible-playbook playbooks/compliance_demo.yml \
+            -e "fail_on_noncompliance=false" \
+            -e "compliance_report_path=$GITHUB_WORKSPACE/compliance-report.json" \
+            2>&1 | tee ansible-playbook.log
 
       - name: Upload compliance report
         if: always()
@@ -88,11 +91,11 @@ jobs:
 
           if not report_path.exists():
               with summary_path.open("a", encoding="utf-8") as fh:
-                fh.write("## Workflow Status\n\n")
-                fh.write("Execution: FAIL\n\n")
-                fh.write("## Compliance Results\n\n")
-                fh.write("Compliance state: UNKNOWN\n\n")
-                fh.write("No compliance report was produced. The playbook likely failed before evaluation completed.\n")
+                  fh.write("## Workflow Status\n\n")
+                  fh.write("Execution: FAIL\n\n")
+                  fh.write("## Compliance Results\n\n")
+                  fh.write("Compliance state: UNKNOWN\n\n")
+                  fh.write("No compliance report was produced. The playbook likely failed before evaluation completed.\n\n")
                   fh.write(f"Playbook step outcome: `{playbook_outcome}`\n\n")
                   append_log_excerpt(fh)
               sys.exit(2)
